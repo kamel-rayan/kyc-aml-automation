@@ -1,0 +1,6 @@
+anthropic>=0.40        # Claude API (tested with 1.11)
+flask>=3.0             # REST API consumed by n8n
+pdfplumber>=0.11       # offline text extraction for text-based PDFs
+reportlab>=4.0         # PDF compliance reports + sample documents
+pillow>=10.1           # sample ID-card image generation
+pytest>=8.0            # test suite

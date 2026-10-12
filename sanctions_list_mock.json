@@ -1,0 +1,42 @@
+{
+  "metadata": {
+    "description": "MOCK consolidated sanctions list in an OFAC SDN / UN Consolidated-style structure. ALL ENTRIES ARE FICTITIOUS and exist only to test the screening engine. Any resemblance to real persons or entities is coincidental. Never use for real screening.",
+    "version": "MOCK-2026.10.01",
+    "generated_at": "2026-10-01T00:00:00Z",
+    "sources": {
+      "OFAC_SDN": "Format modelled on the U.S. Treasury OFAC Specially Designated Nationals list",
+      "UN_CONSOLIDATED": "Format modelled on the UN Security Council Consolidated List"
+    },
+    "fields": {
+      "uid": "Unique list identifier",
+      "list": "OFAC_SDN | UN_CONSOLIDATED",
+      "type": "individual | entity",
+      "name": "Primary listed name",
+      "aka": "Also-known-as / alternate spellings",
+      "nationality": "ISO 3166-1 alpha-2",
+      "dob": "YYYY-MM-DD (individuals)",
+      "programs": "Sanctions programme codes",
+      "listed_on": "Designation date"
+    }
+  },
+  "entries": [
+    {"uid": "MOCK-SDN-10001", "list": "OFAC_SDN", "type": "individual", "name": "Mohammed Abdullah Al-Rashidi", "aka": ["Abu Hamza Al-Rashidi", "Mohamed Abdallah Rashidi"], "nationality": "YE", "dob": "1978-03-14", "programs": ["SDGT"], "listed_on": "2019-06-11", "remarks": "FICTITIOUS - test entry for transliteration matching"},
+    {"uid": "MOCK-SDN-10002", "list": "OFAC_SDN", "type": "individual", "name": "Faisal Umar Al-Nimri", "aka": ["Faysal Omar Nimri"], "nationality": "SY", "dob": "1966-11-02", "programs": ["SYRIA"], "listed_on": "2012-08-20", "remarks": "FICTITIOUS - test entry for false-positive handling"},
+    {"uid": "MOCK-SDN-10003", "list": "OFAC_SDN", "type": "individual", "name": "Reza Kamran Tehrani", "aka": ["Reza Kamrani"], "nationality": "IR", "dob": "1971-01-25", "programs": ["IRAN", "NPWMD"], "listed_on": "2018-11-05", "remarks": "FICTITIOUS"},
+    {"uid": "MOCK-SDN-10004", "list": "OFAC_SDN", "type": "individual", "name": "Kim Song Chol", "aka": ["Kim Song-chol"], "nationality": "KP", "dob": "1975-09-09", "programs": ["DPRK3"], "listed_on": "2017-03-31", "remarks": "FICTITIOUS"},
+    {"uid": "MOCK-SDN-10005", "list": "OFAC_SDN", "type": "individual", "name": "Viktor Pavlovich Orlenko", "aka": ["Victor Orlenko"], "nationality": "RU", "dob": "1969-04-17", "programs": ["CYBER2", "RUSSIA-EO14024"], "listed_on": "2022-04-06", "remarks": "FICTITIOUS"},
+    {"uid": "MOCK-SDN-10006", "list": "OFAC_SDN", "type": "individual", "name": "Usama Ali Al-Bakri", "aka": ["Osama Ali Bakri", "Abu Ali Al-Bakri"], "nationality": "IQ", "dob": "1982-12-01", "programs": ["SDGT"], "listed_on": "2016-02-19", "remarks": "FICTITIOUS - potential-match test entry"},
+    {"uid": "MOCK-SDN-10007", "list": "OFAC_SDN", "type": "individual", "name": "Hassan Jaber Mansouri", "aka": ["Hasan Jabir Al-Mansouri"], "nationality": "LB", "dob": "1974-05-30", "programs": ["SDGT", "HIZBALLAH"], "listed_on": "2020-10-22", "remarks": "FICTITIOUS"},
+    {"uid": "MOCK-SDN-10008", "list": "OFAC_SDN", "type": "individual", "name": "Ahmad Yusuf Darwish", "aka": ["Ahmed Youssef Darwish"], "nationality": "SD", "dob": "1980-07-07", "programs": ["SUDAN-EO14098"], "listed_on": "2023-06-01", "remarks": "FICTITIOUS"},
+    {"uid": "MOCK-SDN-20001", "list": "OFAC_SDN", "type": "entity", "name": "Crescent Horizon Exchange LLC", "aka": ["Crescent Horizon Money Transfer"], "nationality": "AE", "dob": null, "programs": ["SDGT"], "listed_on": "2021-09-14", "remarks": "FICTITIOUS - money service business"},
+    {"uid": "MOCK-SDN-20002", "list": "OFAC_SDN", "type": "entity", "name": "Blue Dune Shipping FZE", "aka": ["Blue Dune Maritime"], "nationality": "AE", "dob": null, "programs": ["IRAN"], "listed_on": "2020-01-10", "remarks": "FICTITIOUS"},
+    {"uid": "MOCK-SDN-20003", "list": "OFAC_SDN", "type": "entity", "name": "Northern Star Trading Company", "aka": ["Pukdu Trading"], "nationality": "KP", "dob": null, "programs": ["DPRK3"], "listed_on": "2018-08-03", "remarks": "FICTITIOUS"},
+    {"uid": "MOCK-UN-QDi.901", "list": "UN_CONSOLIDATED", "type": "individual", "name": "Abdulrahman Saeed Al-Zubayri", "aka": ["Abd al-Rahman Said Zubairi", "Abu Saeed"], "nationality": "SO", "dob": "1985-02-18", "programs": ["ISIL (Da'esh) & Al-Qaida Sanctions"], "listed_on": "2015-07-29", "remarks": "FICTITIOUS"},
+    {"uid": "MOCK-UN-QDi.902", "list": "UN_CONSOLIDATED", "type": "individual", "name": "Khalid Ibrahim Al-Fadhli", "aka": ["Khaled Ebrahim Fadli"], "nationality": "KW", "dob": "1979-10-10", "programs": ["ISIL (Da'esh) & Al-Qaida Sanctions"], "listed_on": "2014-09-23", "remarks": "FICTITIOUS"},
+    {"uid": "MOCK-UN-QDi.903", "list": "UN_CONSOLIDATED", "type": "individual", "name": "Mustafa Sulayman Qasim", "aka": ["Mostafa Suleiman Kassem"], "nationality": "SY", "dob": "1977-06-21", "programs": ["ISIL (Da'esh) & Al-Qaida Sanctions"], "listed_on": "2016-04-12", "remarks": "FICTITIOUS"},
+    {"uid": "MOCK-UN-TAi.904", "list": "UN_CONSOLIDATED", "type": "individual", "name": "Gul Agha Nazari", "aka": ["Gul Aga Nazary"], "nationality": "AF", "dob": "1970-03-03", "programs": ["1988 Sanctions (Taliban)"], "listed_on": "2011-06-17", "remarks": "FICTITIOUS"},
+    {"uid": "MOCK-UN-YEi.905", "list": "UN_CONSOLIDATED", "type": "individual", "name": "Nasser Ali Al-Hamdani", "aka": ["Naser Aly Hamdani"], "nationality": "YE", "dob": "1972-08-15", "programs": ["2140 Sanctions (Yemen)"], "listed_on": "2015-04-14", "remarks": "FICTITIOUS"},
+    {"uid": "MOCK-UN-KPi.906", "list": "UN_CONSOLIDATED", "type": "individual", "name": "Ri Myong Su", "aka": ["Ri Myong-su"], "nationality": "KP", "dob": "1968-12-12", "programs": ["1718 Sanctions (DPRK)"], "listed_on": "2016-11-30", "remarks": "FICTITIOUS"},
+    {"uid": "MOCK-UN-QDe.907", "list": "UN_CONSOLIDATED", "type": "entity", "name": "Silver Palm Relief Foundation", "aka": ["Silver Palm Charitable Society"], "nationality": "SO", "dob": null, "programs": ["ISIL (Da'esh) & Al-Qaida Sanctions"], "listed_on": "2017-05-08", "remarks": "FICTITIOUS - abused charity typology"}
+  ]
+}

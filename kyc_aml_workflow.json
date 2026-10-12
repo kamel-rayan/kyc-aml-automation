@@ -1,0 +1,510 @@
+{
+  "name": "KYC/AML Automation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## KYC / AML Automation\nPOST a KYC document (PDF/PNG/JPG) as multipart field **document** to the webhook.\n\n**Happy path:** Validate → Extract (Claude) → Sanctions screen → Risk classify → Report → (Escalate if review needed) → JSON response.\n\n**Error path:** any stage failure → Format Error → audit log → error response.\n\nEdit `API_BASE` in **Validate Upload** to point at `api_server.py`.",
+        "height": 260,
+        "width": 520,
+        "color": 4
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000001",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        -340
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kyc-aml",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000002",
+      "name": "Webhook - Receive KYC Document",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        0
+      ],
+      "webhookId": "5f1d8c2e-6c7a-4b8e-9d2f-0a1b2c3d4e5f"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- Configuration (single place to edit) ----\nconst API_BASE = 'http://localhost:8000';   // where api_server.py runs\nconst API_KEY  = '';                         // set if KYC_API_KEY is configured on the API\nconst ALLOWED  = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp'];\n\nconst item = $input.first();\nconst keys = Object.keys(item.binary || {});\nif (keys.length === 0) {\n  throw new Error('No file uploaded. Send multipart/form-data with a file in field \"document\".');\n}\n// Prefer the field named \"document\", otherwise take the first uploaded file\nconst key = keys.includes('document') ? 'document' : keys[0];\nconst bin = item.binary[key];\nif (!ALLOWED.includes(bin.mimeType)) {\n  throw new Error(`Unsupported file type ${bin.mimeType}. Allowed: ${ALLOWED.join(', ')}`);\n}\n\nreturn [{\n  json: {\n    api_base_url: API_BASE,\n    api_key: API_KEY,\n    execution_id: $execution.id,\n    received_at: new Date().toISOString(),\n    file_name: bin.fileName,\n    mime_type: bin.mimeType,\n  },\n  binary: { document: bin },\n  pairedItem: { item: 0 },\n}];"
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000003",
+      "name": "Validate Upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        20,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $node[\"Validate Upload\"].json.api_base_url }}/api/v1/parse",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $node[\"Validate Upload\"].json.api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "document",
+              "inputDataFieldName": "document"
+            },
+            {
+              "name": "channel",
+              "value": "n8n"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000004",
+      "name": "1. Extract KYC Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $node[\"Validate Upload\"].json.api_base_url }}/api/v1/screen",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $node[\"Validate Upload\"].json.api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ case_id: $json.case_id }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000005",
+      "name": "2. Sanctions Screening",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $node[\"Validate Upload\"].json.api_base_url }}/api/v1/classify",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $node[\"Validate Upload\"].json.api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ case_id: $json.case_id }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000006",
+      "name": "3. Risk Classification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $node[\"Validate Upload\"].json.api_base_url }}/api/v1/report",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $node[\"Validate Upload\"].json.api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ case_id: $json.case_id }) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000007",
+      "name": "4. Generate Compliance Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c0ffee00-0000-4000-8000-000000000001",
+              "leftValue": "={{ $json.requires_manual_review }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000008",
+      "name": "Needs Manual Review?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $node[\"Validate Upload\"].json.api_base_url }}/api/v1/escalate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $node[\"Validate Upload\"].json.api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ case_id: $json.case_id, priority: $json.sanctions_status === 'MATCH' ? 'P1' : ($json.risk_level === 'High' ? 'P2' : 'P3'), reason: ($json.review_reasons || []).join('; ') }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000009",
+      "name": "Escalate to Review Queue",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        -100
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Assemble the API response from the report stage (+ escalation if it ran)\nconst rep = $('4. Generate Compliance Report').first().json;\nconst base = $('Validate Upload').first().json.api_base_url;\nlet escalation = null;\ntry {\n  const esc = $('Escalate to Review Queue').first().json;\n  escalation = esc.success ? { review_id: esc.review_id, priority: esc.priority } : { error: esc.error || 'escalation failed' };\n} catch (e) { /* node did not run: no review needed */ }\n\nreturn [{ json: {\n  success: true,\n  case_id: rep.case_id,\n  decision: rep.decision,\n  risk_level: rep.risk_level,\n  risk_score: rep.risk_score,\n  sanctions_status: rep.sanctions_status,\n  requires_manual_review: rep.requires_manual_review,\n  review_reasons: rep.review_reasons,\n  escalation,\n  report_sha256: rep.report_sha256,\n  pdf_url: rep.pdf_url ? base + rep.pdf_url : null,\n  case_url: `${base}/api/v1/cases/${rep.case_id}`,\n  processed_by: 'n8n',\n  execution_id: $execution.id,\n}, pairedItem: { item: 0 } }];"
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000010",
+      "name": "Build Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000011",
+      "name": "Respond - Compliance Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1780,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalise errors from any stage into one shape.\n// HTTP Request errors carry the API's JSON error body; Code node errors carry a message.\n// API base URL: from Validate Upload if it ran, else the default\nlet apiBase = 'http://localhost:8000';\ntry { apiBase = $('Validate Upload').first().json.api_base_url || apiBase; } catch (e) {}\n\nconst out = [];\nfor (const [idx, item] of $input.all().entries()) {\n  const err = item.json.error || {};\n  let api = null;\n  // The API's JSON error body may arrive raw or as a quoted string (\"422 - \\\"{...}\\\"\")\n  const tryParse = (s) => {\n    if (typeof s !== 'string') return null;\n    const i = s.indexOf('{');\n    if (i >= 0) { try { return JSON.parse(s.slice(i)); } catch (e) {} }\n    const q = s.indexOf('\"');\n    if (q >= 0) { try { const inner = JSON.parse(s.slice(q)); return typeof inner === 'string' ? JSON.parse(inner) : inner; } catch (e) {} }\n    return null;\n  };\n  for (const c of [err.description, err.message, item.json.message, item.json.error]) {\n    api = tryParse(c);\n    if (api && (api.error || api.case_id)) break;\n    api = null;\n  }\n  const httpCode = Number(err.httpCode || (err.status) || 0) || null;\n  const msg = String(err.message || item.json.message || item.json.error || '');\n  let status = httpCode && httpCode >= 400 && httpCode < 600 ? httpCode : 500;\n  if ($prevNode.name === 'Validate Upload') status = 400;               // bad client input\n  else if (/ECONNREFUSED|ETIMEDOUT|ENOTFOUND|timeout/i.test(msg) && !httpCode) status = 502;  // API unreachable\n  out.push({ json: {\n    success: false,\n    api_base_url: apiBase,\n    failed_stage: $prevNode.name,\n    case_id: (api && api.case_id) || item.json.case_id || null,\n    http_status: status,\n    error: (api && api.error) || { code: $prevNode.name === 'Validate Upload' ? 'INVALID_UPLOAD' : 'WORKFLOW_ERROR', message: msg.replace(/ \\[line \\d+\\]$/, '') || 'Unknown error' },\n    execution_id: $execution.id,\n    timestamp: new Date().toISOString(),\n  }, pairedItem: { item: idx } });\n}\nreturn out;"
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000012",
+      "name": "Format Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.api_base_url }}/api/v1/audit",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ case_id: $json.case_id, actor: 'n8n', action: 'WORKFLOW_ERROR', details: { failed_stage: $json.failed_stage, error: $json.error, execution_id: $json.execution_id } }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000013",
+      "name": "Log Error to Audit Trail",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        300
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify((({ http_status, api_base_url, ...rest }) => rest)($node[\"Format Error\"].json)) }}",
+        "options": {
+          "responseCode": "={{ $node[\"Format Error\"].json.http_status }}"
+        }
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000014",
+      "name": "Respond - Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - Receive KYC Document": {
+      "main": [
+        [
+          {
+            "node": "Validate Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Upload": {
+      "main": [
+        [
+          {
+            "node": "1. Extract KYC Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Extract KYC Data": {
+      "main": [
+        [
+          {
+            "node": "2. Sanctions Screening",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Sanctions Screening": {
+      "main": [
+        [
+          {
+            "node": "3. Risk Classification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Risk Classification": {
+      "main": [
+        [
+          {
+            "node": "4. Generate Compliance Report",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Generate Compliance Report": {
+      "main": [
+        [
+          {
+            "node": "Needs Manual Review?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Manual Review?": {
+      "main": [
+        [
+          {
+            "node": "Escalate to Review Queue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escalate to Review Queue": {
+      "main": [
+        [
+          {
+            "node": "Build Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Response": {
+      "main": [
+        [
+          {
+            "node": "Respond - Compliance Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error": {
+      "main": [
+        [
+          {
+            "node": "Log Error to Audit Trail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Error to Audit Trail": {
+      "main": [
+        [
+          {
+            "node": "Respond - Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}
